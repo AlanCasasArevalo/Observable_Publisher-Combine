@@ -7,10 +7,14 @@
 //
 
 import UIKit
+import RxSwift
+import RxCocoa
 
 class MainViewController: UIViewController {
 
     @IBOutlet weak var label: UILabel!
+
+    var disposeBag = DisposeBag()
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -19,11 +23,10 @@ class MainViewController: UIViewController {
     }
 
     @IBAction func touchButtonPressed(_ sender: Any) {
-        doAsyncTask { text in
-            DispatchQueue.main.async {
-                self.label.text = text
-            }
-        }
+        rxAsyncTask()
+            .observeOn(MainScheduler.instance)
+            .bind(to: label.rx.text)
+            .disposed(by: disposeBag)
     }
 
     func doAsyncTask (_ task: @escaping (String?) -> Void) {
@@ -43,6 +46,24 @@ class MainViewController: UIViewController {
             }
         }
         
+    }
+    
+    func rxAsyncTask() -> Observable<String?> {
+        return Observable.create { emitter in
+            self.doAsyncTask { text in
+                
+                guard let textFromAsyncTask = text else {
+                    emitter.onNext(text)
+                    emitter.onCompleted()
+                    return
+                }
+                
+                emitter.onNext(textFromAsyncTask)
+                
+            }
+            
+            return Disposables.create()
+        }
     }
         
 }
