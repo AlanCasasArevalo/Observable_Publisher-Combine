@@ -7,14 +7,16 @@
 //
 
 import UIKit
-import RxSwift
-import RxCocoa
+import Combine
 
+@available(iOS 13.0, *)
 class MainViewController: UIViewController {
 
     @IBOutlet weak var label: UILabel!
 
-    var disposeBag = DisposeBag()
+    var cancellable: Cancellable?
+    
+    @Published var publishedValue: String? = nil
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -23,10 +25,9 @@ class MainViewController: UIViewController {
     }
 
     @IBAction func touchButtonPressed(_ sender: Any) {
-        rxAsyncTask()
-            .observeOn(MainScheduler.instance)
-            .bind(to: label.rx.text)
-            .disposed(by: disposeBag)
+        cancellable = asyncTaskPublisher()
+            .receive(on: RunLoop.main)
+            .assign(to: \.text, on: label)
     }
 
     func doAsyncTask (_ task: @escaping (String?) -> Void) {
@@ -48,22 +49,11 @@ class MainViewController: UIViewController {
         
     }
     
-    func rxAsyncTask() -> Observable<String?> {
-        return Observable.create { emitter in
-            self.doAsyncTask { text in
-                
-                guard let textFromAsyncTask = text else {
-                    emitter.onNext(text)
-                    emitter.onCompleted()
-                    return
-                }
-                
-                emitter.onNext(textFromAsyncTask)
-                
-            }
-            
-            return Disposables.create()
-        }
+    func asyncTaskPublisher() -> AnyPublisher<String?, Never> {
+        doAsyncTask { text in
+            self.publishedValue = text
+        }        
+        return $publishedValue.eraseToAnyPublisher()
     }
         
 }
