@@ -13,13 +13,12 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     var window: UIWindow?
 
-
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         window = UIWindow(frame: UIScreen.main.bounds)
         window?.makeKeyAndVisible()
         var rootVC = UIViewController()
         if #available(iOS 13.0, *) {
-            rootVC = UIViewController()
+            rootVC = MainViewController()
         } else {
         }
         rootVC.view.backgroundColor = UIColor.cyan
